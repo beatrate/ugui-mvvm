@@ -17,6 +17,14 @@ using UnityEngine;
 /// </summary>
 public class PropertyPathAccessorGenerator
 {
+	private class ProgressBarScope : IDisposable
+	{
+		public void Dispose()
+		{
+			EditorUtility.ClearProgressBar();
+		}
+	}
+
     private static string _filePath;
     private static StringBuilder _contents;
     private readonly static HashSet<PropertyInfo[]> _paths = new HashSet<PropertyInfo[]>(PropertyPathAccessors.Comparer);
@@ -35,60 +43,64 @@ public class PropertyPathAccessorGenerator
         if (Application.isPlaying) return;
 
         const string title = "Generating property accessors";
-        EditorUtility.DisplayProgressBar(title, "", 0);
+
+		using(var progressScope = new ProgressBarScope())
+		{
+			EditorUtility.DisplayProgressBar(title, "", 0);
 
 #if UNITY_5_3_OR_NEWER
-        var currentLevel = EditorSceneManager.GetActiveScene();
+			var currentLevel = EditorSceneManager.GetActiveScene();
 #else
         var currentLevel = EditorApplication.currentScene;
 #endif
-        _contents = new StringBuilder();
-        _paths.Clear();
-        EditorUtility.DisplayProgressBar(title, "Creating header", 0);
-        CreateHeader(_contents);
+			_contents = new StringBuilder();
+			_paths.Clear();
+			EditorUtility.DisplayProgressBar(title, "Creating header", 0);
+			CreateHeader(_contents);
 
-        var scenes = SelectedScenes;
-        float total = scenes.Length + 1;
+			var scenes = SelectedScenes;
+			float total = scenes.Length + 1;
 
-        for (int i = 0; i < scenes.Length; i++)
-        {
-            var level = scenes[i];
-            EditorUtility.DisplayProgressBar(title, "Opening scene " + level, i / total);
+			for(int i = 0; i < scenes.Length; i++)
+			{
+				var level = scenes[i];
+				EditorUtility.DisplayProgressBar(title, "Opening scene " + level, i / total);
 #if UNITY_5_3_OR_NEWER
-            var scene = EditorSceneManager.OpenScene(level);
-            EditorSceneManager.SetActiveScene(scene);
+				var scene = EditorSceneManager.OpenScene(level);
+				EditorSceneManager.SetActiveScene(scene);
 #else
             EditorApplication.OpenScene(level);
 #endif
-            EditorUtility.DisplayProgressBar(title, "Adding paths in " + level, i / total);
-            BuildPathsInScene(_contents);
+				EditorUtility.DisplayProgressBar(title, "Adding paths in " + level, i / total);
+				BuildPathsInScene(_contents);
 #if UNITY_5_3_OR_NEWER
-            EditorSceneManager.CloseScene(scene, true);
+				EditorSceneManager.CloseScene(scene, true);
 #endif
-        }
+			}
 
-        EditorUtility.DisplayProgressBar(title, "Generating for prefabs", total - 0.5f / total);
-        GenForPrefabs(_contents);
+			EditorUtility.DisplayProgressBar(title, "Generating for prefabs", total - 0.5f / total);
+			GenForPrefabs(_contents);
 
-        FinishContents(_contents);
+			FinishContents(_contents);
 
-        EditorUtility.DisplayProgressBar(title, "Reopening original", 1);
+			EditorUtility.DisplayProgressBar(title, "Reopening original", 1);
 #if UNITY_5_3_OR_NEWER
-        EditorSceneManager.SetActiveScene(currentLevel);
+			EditorSceneManager.SetActiveScene(currentLevel);
 #endif
-        var contents = _contents.ToString();
-        if (!ValidateContents(contents))
-        {
-            var sw = new StreamWriter(CreateFile());
-            sw.Write(contents);
-            FinishFile(sw);
+			var contents = _contents.ToString();
+			if(!ValidateContents(contents))
+			{
+				var sw = new StreamWriter(CreateFile());
+				sw.Write(contents);
+				FinishFile(sw);
 
-            AssetDatabase.ImportAsset(_filePath.Replace(Application.dataPath, "Assets"));
-        }
+				AssetDatabase.ImportAsset(_filePath.Replace(Application.dataPath, "Assets"));
+			}
 
-        ClearState();
+			ClearState();
 
-        EditorUtility.ClearProgressBar();
+			EditorUtility.ClearProgressBar();
+		}
     }
 
     private static FileStream CreateFile()
@@ -192,7 +204,14 @@ static void Register()
         ValidateDirectory();
         ValidateFile();
 
-        return File.ReadAllText(_filePath) == contents;
+		try
+		{
+			return File.ReadAllText(_filePath) == contents;
+		}
+        catch(FileNotFoundException)
+		{
+			return false;
+		}
     }
 
     private static void ValidateFile()
