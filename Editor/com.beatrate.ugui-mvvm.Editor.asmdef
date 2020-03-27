@@ -1,0 +1,17 @@
+{
+    "name": "com.beatrate.ugui-mvvm.Editor",
+    "references": [
+        "com.beatrate.ugui-mvvm"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

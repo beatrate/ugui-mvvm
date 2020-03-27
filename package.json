@@ -1,0 +1,17 @@
+{
+    "name": "com.beatrate.ugui-mvvm",
+    "version": "1.0.0",
+    "displayName": "uGUI MVVM",
+    "description": "Unity GUI (the new one) databinding done via the standard INotifyPropertyChanged/INotifyCollectionChanged interfaces that are used in WPF applications.",
+    "unity": "2019.3",
+    "author": {
+        "name": "beatrate"
+    },
+    "samples": [
+        {
+            "displayName": "uGUI MVVM Samples",
+            "description": "Basic examples",
+            "path": "Samples~/uGUI MVVM Samples"
+        }
+    ]
+}
